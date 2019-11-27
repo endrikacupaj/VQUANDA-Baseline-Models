@@ -7,7 +7,7 @@ class Evaluator(object):
     def __init__(self, criterion):
         self.criterion = criterion
 
-    def evaluate(self, model, iterator):
+    def evaluate(self, model, iterator, teacher_ratio=1.0):
         model.eval()
         epoch_loss = 0
         with torch.no_grad():
@@ -15,7 +15,7 @@ class Evaluator(object):
                 src, src_len = batch.src
                 trg = batch.trg
                 input_trg = trg if model.name == RNN_NAME else trg[:, :-1]
-                output, _ = model(src, src_len, input_trg, 0)
+                output, _ = model(src, src_len, input_trg, teacher_ratio)
                 trg = trg.t() if model.name == RNN_NAME else trg[:, 1:]
                 output = output.contiguous().view(-1, output.shape[-1])
                 trg = trg.contiguous().view(-1)

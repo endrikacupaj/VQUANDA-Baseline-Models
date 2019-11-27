@@ -64,13 +64,13 @@ class Trainer(object):
         for epoch in range(num_of_epochs):
             start_time = time.time()
             train_loss = self._train_batch(model, train_iterator, teacher_ratio, clip)
-            valid_loss = self.evaluator.evaluate(model, valid_iterator)
+            valid_loss = self.evaluator.evaluate(model, valid_iterator, teacher_ratio)
             end_time = time.time()
             self._log_epoch(train_loss, valid_loss, epoch, start_time, end_time)
             if valid_loss < best_valid_loss:
                 best_valid_loss = valid_loss
                 Chechpoint.save(model)
 
-    def train(self, model, train_data, valid_data, num_of_epochs=20, teacher_ratio=0.5, clip=1):
+    def train(self, model, train_data, valid_data, num_of_epochs=20, teacher_ratio=1.0, clip=1):
         """Train model"""
         self._train_epoches(model, train_data, valid_data, num_of_epochs, teacher_ratio, clip)
