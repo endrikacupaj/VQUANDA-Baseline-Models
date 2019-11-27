@@ -13,7 +13,6 @@ import torch.optim as optim
 from torchtext.data import BucketIterator
 
 from models.seq2seq import Seq2Seq
-from models.cnn import EncoderConv, DecoderConv
 from utils.checkpoint import Chechpoint
 from trainer.trainer import Trainer
 from utils.scorer import BleuScorer
@@ -74,15 +73,17 @@ def main():
     print('--------------------------------')
 
     if args.model == RNN_NAME and args.attention == ATTENTION_1:
-        from models.rnn1 import EncoderRNN, DecoderRNN
+        from models.rnn1 import Encoder, Decoder
     elif args.model == RNN_NAME and args.attention == ATTENTION_2:
-        from models.rnn2 import EncoderRNN, DecoderRNN
+        from models.rnn2 import Encoder, Decoder
+    elif args.model == CNN_NAME:
+        from models.cnn import Encoder, Decoder
+    elif args.model == TRANSFORMER_NAME:
+        from models.transformer import Encoder, Decoder
 
     # create model
-    encoder = EncoderRNN(src_vocab, DEVICE) if args.model == RNN_NAME else \
-              EncoderConv(src_vocab, DEVICE)
-    decoder = DecoderRNN(trg_vocab, DEVICE) if args.model == RNN_NAME else \
-              DecoderConv(trg_vocab, DEVICE)
+    encoder = Encoder(src_vocab, DEVICE)
+    decoder = Decoder(trg_vocab, DEVICE)
     model = Seq2Seq(encoder, decoder, args.model).to(DEVICE)
 
     parameters_num = sum(p.numel() for p in model.parameters() if p.requires_grad)

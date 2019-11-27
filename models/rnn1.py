@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from utils.constants import PAD_TOKEN, EOS_TOKEN, SOS_TOKEN
 
-class EncoderRNN(nn.Module):
-    """EncoderRNN"""
+class Encoder(nn.Module):
+    """Encoder"""
     def __init__(self, vocabulary, device, embed_dim=256, hidden_size=512,
                  num_layers=2, dropout=0.5, bidirectional=True):
         super().__init__()
@@ -108,8 +108,8 @@ class Attention(nn.Module):
         return F.softmax(attention, dim=1)
 
 
-class DecoderRNN(nn.Module):
-    """DecoderRNN"""
+class Decoder(nn.Module):
+    """Decoder"""
     def __init__(self, vocabulary, device, embed_dim=256, hidden_size=512,
                  num_layers=2, dropout=0.5, max_positions=50):
         super().__init__()

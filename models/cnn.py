@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from utils.constants import PAD_TOKEN
 
-class EncoderConv(nn.Module):
-    """EncoderConv"""
+class Encoder(nn.Module):
+    """Encoder"""
     def __init__(self, vocabulary, device, embed_dim=512, convolutions=((512, 3),) * 3,
                  dropout=0.5, max_positions=100):
         super().__init__()
@@ -156,8 +156,8 @@ class Attention(nn.Module):
         return attended_combined, attention
 
 
-class DecoderConv(nn.Module):
-    """DecoderConv"""
+class Decoder(nn.Module):
+    """Decoder"""
     def __init__(self, vocabulary, device, embed_dim=512, convolutions=((512, 3),) * 3,
                  dropout=0.5, max_positions=100):
         super().__init__()

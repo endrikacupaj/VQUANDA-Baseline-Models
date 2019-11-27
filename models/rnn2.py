@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from utils.constants import PAD_TOKEN, EOS_TOKEN, SOS_TOKEN
 
-class EncoderRNN(nn.Module):
-    """EncoderRNN"""
+class Encoder(nn.Module):
+    """Encoder"""
     def __init__(self, vocabulary, device, hidden_size=512, num_layers=2,
                  bidirectional=True, cell_name='gru', dropout=0.5):
         super().__init__()
@@ -104,8 +104,8 @@ class Attention(nn.Module):
         return x, attn_scores
 
 
-class DecoderRNN(nn.Module):
-    """DecoderRNN"""
+class Decoder(nn.Module):
+    """Decoder"""
     def __init__(self, vocabulary, device, hidden_size=512, num_layers=2,
                  max_len=50, cell_name='gru', dropout=0.5):
         super().__init__()
