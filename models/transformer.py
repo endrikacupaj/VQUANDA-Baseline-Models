@@ -83,6 +83,7 @@ class Decoder(nn.Module):
         self.pf_dim = pf_dim
         self.dropout = dropout
         self.device = device
+        self.max_positions = max_positions
 
         self.tok_embedding = nn.Embedding(output_dim, hid_dim)
         self.pos_embedding = nn.Embedding(max_positions, hid_dim)

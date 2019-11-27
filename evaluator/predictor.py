@@ -12,7 +12,7 @@ class Predictor(object):
         self.trg_vocab = trg_vocab
         self.device = device
 
-    def _predict_cnn_step(self, tokens):
+    def _predict_step(self, tokens):
         self.model.eval()
         tokenized_sentence = [SOS_TOKEN] + [t.lower() for t in tokens] + [EOS_TOKEN]
         numericalized = [self.src_vocab.stoi[token] for token in tokenized_sentence]
@@ -59,4 +59,4 @@ class Predictor(object):
     def predict(self, tokens):
         """Perform prediction on given tokens"""
         return self._predict_rnn_step(tokens) if self.model.name == RNN_NAME else \
-                self._predict_cnn_step(tokens)
+                self._predict_step(tokens)
