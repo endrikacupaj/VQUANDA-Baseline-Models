@@ -79,7 +79,7 @@ def main():
     elif args.model == CNN_NAME:
         from models.cnn import Encoder, Decoder
     elif args.model == TRANSFORMER_NAME:
-        from models.transformer import Encoder, Decoder
+        from models.transformer import Encoder, Decoder, NoamOpt
 
     # create model
     encoder = Encoder(src_vocab, DEVICE)
@@ -90,8 +90,17 @@ def main():
     print(f'The model has {parameters_num:,} trainable parameters')
     print('--------------------------------')
 
-    # create optimizer and criterion
-    optimizer = optim.Adam(model.parameters())
+    # create optimizer
+    if model.name == TRANSFORMER_NAME:
+        # initialize model parameters with Glorot / fan_avg
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+        optimizer = NoamOpt(torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
+    else:
+        optimizer = optim.Adam(model.parameters())
+
+    # define criterion
     criterion = nn.CrossEntropyLoss(ignore_index=trg_vocab.stoi[PAD_TOKEN])
 
     # train data

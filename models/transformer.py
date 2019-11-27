@@ -2,34 +2,32 @@
 Seq2seq based: Attention Is All You Need
 https://arxiv.org/abs/1706.03762
 """
+import math
 import torch
 import torch.nn as nn
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_dim, hid_dim, n_layers, n_heads, pf_dim, encoder_layer, self_attention, positionwise_feedforward, dropout, device):
+    def __init__(self, vocabulary, device, hid_dim=512, n_layers=6, n_heads=8,
+                 pf_dim=2048, dropout=0.1, max_positions=100):
         super().__init__()
 
-        self.input_dim = input_dim
+        input_dim = len(vocabulary)
         self.hid_dim = hid_dim
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.pf_dim = pf_dim
-        self.encoder_layer = encoder_layer
-        self.self_attention = self_attention
-        self.positionwise_feedforward = positionwise_feedforward
         self.dropout = dropout
         self.device = device
 
         self.tok_embedding = nn.Embedding(input_dim, hid_dim)
-        self.pos_embedding = nn.Embedding(1000, hid_dim)
+        self.pos_embedding = nn.Embedding(max_positions, hid_dim)
 
-        self.layers = nn.ModuleList([encoder_layer(hid_dim, n_heads, pf_dim, self_attention, positionwise_feedforward, dropout, device)
-                                     for _ in range(n_layers)])
+        self.layers = nn.ModuleList([EncoderLayer(hid_dim, n_heads, pf_dim, dropout, device) for _ in range(n_layers)])
 
         self.do = nn.Dropout(dropout)
 
-        self.scale = torch.sqrt(torch.FloatTensor([hid_dim])).to(device)
+        self.scale = math.sqrt(hid_dim)
 
     def mask_src(self, src):
         # src = [batch size, src sent len]
@@ -52,12 +50,12 @@ class Encoder(nn.Module):
         return src
 
 class EncoderLayer(nn.Module):
-    def __init__(self, hid_dim, n_heads, pf_dim, self_attention, positionwise_feedforward, dropout, device):
+    def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
         super().__init__()
 
         self.ln = nn.LayerNorm(hid_dim)
-        self.sa = self_attention(hid_dim, n_heads, dropout, device)
-        self.pf = positionwise_feedforward(hid_dim, pf_dim, dropout)
+        self.sa = SelfAttention(hid_dim, n_heads, dropout, device)
+        self.pf = PositionwiseFeedforward(hid_dim, pf_dim, dropout)
         self.do = nn.Dropout(dropout)
 
     def forward(self, src, src_mask):
@@ -70,6 +68,74 @@ class EncoderLayer(nn.Module):
         src = self.ln(src + self.do(self.pf(src)))
 
         return src
+
+class Decoder(nn.Module):
+    def __init__(self, vocabulary, device, hid_dim=512, n_layers=6,
+                 n_heads=8, pf_dim=2048, dropout=0.1, max_positions=100):
+        super().__init__()
+
+        output_dim = len(vocabulary)
+        self.hid_dim = hid_dim
+        self.n_layers = n_layers
+        self.n_heads = n_heads
+        self.pf_dim = pf_dim
+        self.dropout = dropout
+        self.device = device
+
+        self.tok_embedding = nn.Embedding(output_dim, hid_dim)
+        self.pos_embedding = nn.Embedding(max_positions, hid_dim)
+
+        self.layers = nn.ModuleList([DecoderLayer(hid_dim, n_heads, pf_dim, dropout, device)
+                                     for _ in range(n_layers)])
+
+        self.fc = nn.Linear(hid_dim, output_dim)
+
+        self.do = nn.Dropout(dropout)
+
+        self.scale = math.sqrt(hid_dim)
+
+    def forward(self, trg, src, trg_mask, src_mask):
+
+        #trg = [batch_size, trg sent len]
+        #src = [batch_size, src sent len]
+        #trg_mask = [batch size, trg sent len]
+        #src_mask = [batch size, src sent len]
+
+        pos = torch.arange(0, trg.shape[1]).unsqueeze(0).repeat(trg.shape[0], 1).to(self.device)
+
+        trg = self.do((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
+
+        #trg = [batch size, trg sent len, hid dim]
+
+        for layer in self.layers:
+            trg = layer(trg, src, trg_mask, src_mask)
+
+        return self.fc(trg)
+
+class DecoderLayer(nn.Module):
+    def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
+        super().__init__()
+
+        self.ln = nn.LayerNorm(hid_dim)
+        self.sa = SelfAttention(hid_dim, n_heads, dropout, device)
+        self.ea = SelfAttention(hid_dim, n_heads, dropout, device)
+        self.pf = PositionwiseFeedforward(hid_dim, pf_dim, dropout)
+        self.do = nn.Dropout(dropout)
+
+    def forward(self, trg, src, trg_mask, src_mask):
+
+        #trg = [batch size, trg sent len, hid dim]
+        #src = [batch size, src sent len, hid dim]
+        #trg_mask = [batch size, trg sent len]
+        #src_mask = [batch size, src sent len]
+
+        trg = self.ln(trg + self.do(self.sa(trg, trg, trg, trg_mask)))
+
+        trg = self.ln(trg + self.do(self.ea(trg, src, src, src_mask)))
+
+        trg = self.ln(trg + self.do(self.pf(trg)))
+
+        return trg
 
 class SelfAttention(nn.Module):
     def __init__(self, hid_dim, n_heads, dropout, device):
@@ -163,76 +229,6 @@ class PositionwiseFeedforward(nn.Module):
 
         return x
 
-class Decoder(nn.Module):
-    def __init__(self, output_dim, hid_dim, n_layers, n_heads, pf_dim, decoder_layer, self_attention, positionwise_feedforward, dropout, device):
-        super().__init__()
-
-        self.output_dim = output_dim
-        self.hid_dim = hid_dim
-        self.n_layers = n_layers
-        self.n_heads = n_heads
-        self.pf_dim = pf_dim
-        self.decoder_layer = decoder_layer
-        self.self_attention = self_attention
-        self.positionwise_feedforward = positionwise_feedforward
-        self.dropout = dropout
-        self.device = device
-
-        self.tok_embedding = nn.Embedding(output_dim, hid_dim)
-        self.pos_embedding = nn.Embedding(1000, hid_dim)
-
-        self.layers = nn.ModuleList([decoder_layer(hid_dim, n_heads, pf_dim, self_attention, positionwise_feedforward, dropout, device)
-                                     for _ in range(n_layers)])
-
-        self.fc = nn.Linear(hid_dim, output_dim)
-
-        self.do = nn.Dropout(dropout)
-
-        self.scale = torch.sqrt(torch.FloatTensor([hid_dim])).to(device)
-
-    def forward(self, trg, src, trg_mask, src_mask):
-
-        #trg = [batch_size, trg sent len]
-        #src = [batch_size, src sent len]
-        #trg_mask = [batch size, trg sent len]
-        #src_mask = [batch size, src sent len]
-
-        pos = torch.arange(0, trg.shape[1]).unsqueeze(0).repeat(trg.shape[0], 1).to(self.device)
-
-        trg = self.do((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
-
-        #trg = [batch size, trg sent len, hid dim]
-
-        for layer in self.layers:
-            trg = layer(trg, src, trg_mask, src_mask)
-
-        return self.fc(trg)
-
-class DecoderLayer(nn.Module):
-    def __init__(self, hid_dim, n_heads, pf_dim, self_attention, positionwise_feedforward, dropout, device):
-        super().__init__()
-
-        self.ln = nn.LayerNorm(hid_dim)
-        self.sa = self_attention(hid_dim, n_heads, dropout, device)
-        self.ea = self_attention(hid_dim, n_heads, dropout, device)
-        self.pf = positionwise_feedforward(hid_dim, pf_dim, dropout)
-        self.do = nn.Dropout(dropout)
-
-    def forward(self, trg, src, trg_mask, src_mask):
-
-        #trg = [batch size, trg sent len, hid dim]
-        #src = [batch size, src sent len, hid dim]
-        #trg_mask = [batch size, trg sent len]
-        #src_mask = [batch size, src sent len]
-
-        trg = self.ln(trg + self.do(self.sa(trg, trg, trg, trg_mask)))
-
-        trg = self.ln(trg + self.do(self.ea(trg, src, src, src_mask)))
-
-        trg = self.ln(trg + self.do(self.pf(trg)))
-
-        return trg
-
 def mask_src(self, src):
     # src = [batch size, src sent len]
     src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2)
@@ -274,7 +270,7 @@ def make_masks(self, src, trg):
 
 class NoamOpt:
     "Optim wrapper that implements rate."
-    def __init__(self, model_size, factor, warmup, optimizer):
+    def __init__(self, optimizer, model_size=512, factor=1, warmup=2000):
         self.optimizer = optimizer
         self._step = 0
         self.warmup = warmup
