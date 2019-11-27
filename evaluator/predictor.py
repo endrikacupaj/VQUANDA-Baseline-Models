@@ -27,7 +27,7 @@ class Predictor(object):
             trg_tensor = torch.LongTensor(outputs).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
-                output, attention = self.model.decoder(trg_tensor, encoder_out, src_tokens=src_tensor)
+                output = self.model.decoder(trg_tensor, encoder_out, src_tokens=src_tensor)
 
             prediction = output.argmax(2)[:, -1].item()
 
@@ -38,7 +38,7 @@ class Predictor(object):
 
         translation = [self.trg_vocab.itos[i] for i in outputs]
 
-        return translation[1:], attention
+        return translation[1:] # , attention
 
     def _predict_rnn_step(self, tokens):
         self.model.eval()
@@ -49,12 +49,12 @@ class Predictor(object):
             src_len = torch.LongTensor([len(numericalized)]).to(self.device)
             tensor = torch.LongTensor(numericalized).unsqueeze(1).to(self.device)
 
-            translation_tensor_logits, attention = self.model(tensor.t(), src_len, None)
+            translation_tensor_logits = self.model(tensor.t(), src_len, None)
 
             translation_tensor = torch.argmax(translation_tensor_logits.squeeze(1), 1)
             translation = [self.trg_vocab.itos[t] for t in translation_tensor]
 
-        return translation[1:], attention
+        return translation[1:] # , attention
 
     def predict(self, tokens):
         """Perform prediction on given tokens"""

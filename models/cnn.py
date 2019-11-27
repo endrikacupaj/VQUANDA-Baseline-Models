@@ -266,7 +266,7 @@ class Decoder(nn.Module):
 
         outputs = self.out(conved)
 
-        return outputs, avg_attn_scores
+        return outputs # , avg_attn_scores
 
 def extend_conv_spec(convolutions):
     """

@@ -16,7 +16,7 @@ class BleuScorer(object):
         """Score complete list of data"""
         for example in data:
             reference = [t.lower() for t in example.trg]
-            hypothesis, _ = predictor.predict(example.src)
+            hypothesis = predictor.predict(example.src)
             blue_score = self.example_score(reference, hypothesis)
             self.results.append({
                 'reference': reference,

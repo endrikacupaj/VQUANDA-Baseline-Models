@@ -233,9 +233,9 @@ class Decoder(nn.Module):
             # if inference is enabled and highest predicted token is <eos> then stop
             # and return everything till position i
             if inference and input.item() == self.eos_idx:
-                return outputs[:i], attentions[:i]
+                return outputs[:i] # , attentions[:i]
 
-        return outputs, attentions
+        return outputs # , attentions
 
 def Embedding(num_embeddings, embedding_dim, padding_idx):
     """Embedding layer"""

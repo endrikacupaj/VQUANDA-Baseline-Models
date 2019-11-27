@@ -198,9 +198,9 @@ class Decoder(nn.Module):
             decoder_input = trg_tokens[:, i] if use_teacher_forcing else output.argmax(1)
 
             if inference and decoder_input.item() == self.eos_id and i > 0:
-                return outputs[:i], attentions[:i]
+                return outputs[:i] # , attentions[:i]
 
-        return outputs, attentions
+        return outputs # , attentions
 
 
 def RNN(cell_name):

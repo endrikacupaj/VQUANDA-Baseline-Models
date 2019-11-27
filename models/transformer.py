@@ -5,7 +5,7 @@ https://arxiv.org/abs/1706.03762
 import math
 import torch
 import torch.nn as nn
-
+from utils.constants import PAD_TOKEN
 
 class Encoder(nn.Module):
     def __init__(self, vocabulary, device, hid_dim=512, n_layers=6, n_heads=8,
@@ -13,6 +13,7 @@ class Encoder(nn.Module):
         super().__init__()
 
         input_dim = len(vocabulary)
+        self.pad_id = vocabulary.stoi[PAD_TOKEN]
         self.hid_dim = hid_dim
         self.n_layers = n_layers
         self.n_heads = n_heads
@@ -29,18 +30,18 @@ class Encoder(nn.Module):
 
         self.scale = math.sqrt(hid_dim)
 
-    def mask_src(self, src):
+    def mask_src(self, src_tokens):
         # src = [batch size, src sent len]
-        src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2)
+        src_mask = (src_tokens != self.pad_id).unsqueeze(1).unsqueeze(2)
         return src_mask # (batch_size, 1, 1, src_len)
 
-    def forward(self, src):
+    def forward(self, src_tokens, **kwargs):
         #src = [batch size, src sent len]
-        src_mask = self.mask_src(src) # (batch_size, src_len)
+        src_mask = self.mask_src(src_tokens) # (batch_size, src_len)
 
-        pos = torch.arange(0, src.shape[1]).unsqueeze(0).repeat(src.shape[0], 1).to(self.device)
+        pos = torch.arange(0, src_tokens.shape[1]).unsqueeze(0).repeat(src_tokens.shape[0], 1).to(self.device)
 
-        src = self.do((self.tok_embedding(src) * self.scale) + self.pos_embedding(pos))
+        src = self.do((self.tok_embedding(src_tokens) * self.scale) + self.pos_embedding(pos))
 
         #src = [batch size, src sent len, hid dim]
 
@@ -75,6 +76,7 @@ class Decoder(nn.Module):
         super().__init__()
 
         output_dim = len(vocabulary)
+        self.pad_id = vocabulary.stoi[PAD_TOKEN]
         self.hid_dim = hid_dim
         self.n_layers = n_layers
         self.n_heads = n_heads
@@ -94,21 +96,36 @@ class Decoder(nn.Module):
 
         self.scale = math.sqrt(hid_dim)
 
-    def forward(self, trg, src, trg_mask, src_mask):
+    def make_masks(self, src_tokens, trg_tokens):
+        #src_tokens = [batch size, src sent len]
+        #trg = [batch size, trg sent len]
+        src_mask = (src_tokens != self.pad_id).unsqueeze(1).unsqueeze(2)
+        trg_pad_mask = (trg_tokens != self.pad_id).unsqueeze(1).unsqueeze(3)
+        #src_mask = [batch size, 1, 1, src sent len]
+        #trg_pad_mask = [batch size, 1, trg sent len, 1]
+        trg_len = trg_tokens.shape[1]
+        trg_sub_mask = torch.tril(torch.ones((trg_len, trg_len), device=self.device)).byte()
+        #trg_sub_mask = [trg sent len, trg sent len]
+        trg_mask = trg_pad_mask & trg_sub_mask
+        #trg_mask = [batch size, 1, trg sent len, trg sent len]
+        return src_mask, trg_mask
 
+    def forward(self, trg_tokens, encoder_out, **kwargs):
         #trg = [batch_size, trg sent len]
         #src = [batch_size, src sent len]
         #trg_mask = [batch size, trg sent len]
         #src_mask = [batch size, src sent len]
+        src_tokens = kwargs.get('src_tokens', '')
+        src_mask, trg_mask = self.make_masks(src_tokens, trg_tokens)
 
-        pos = torch.arange(0, trg.shape[1]).unsqueeze(0).repeat(trg.shape[0], 1).to(self.device)
+        pos = torch.arange(0, trg_tokens.shape[1]).unsqueeze(0).repeat(trg_tokens.shape[0], 1).to(self.device)
 
-        trg = self.do((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
+        trg = self.do((self.tok_embedding(trg_tokens) * self.scale) + self.pos_embedding(pos))
 
         #trg = [batch size, trg sent len, hid dim]
 
         for layer in self.layers:
-            trg = layer(trg, src, trg_mask, src_mask)
+            trg = layer(trg, encoder_out, trg_mask, src_mask)
 
         return self.fc(trg)
 
@@ -228,45 +245,6 @@ class PositionwiseFeedforward(nn.Module):
         #x = [batch size, sent len, hid dim]
 
         return x
-
-def mask_src(self, src):
-    # src = [batch size, src sent len]
-    src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2)
-    return src_mask # (batch_size, 1, 1, src_len)
-
-def mask_trg(self, trg):
-    # trg = (batch_size, trg_len)
-    trg_pad_mask = (trg != self.pad_idx).unsqueeze(1).unsqueeze(3) # (batch_size, 1, trg_len, 1)
-    trg_len = trg.shape[1]
-    trg_sub_mask = torch.tril(torch.ones((trg_len, trg_len), device=self.device)).bool() # (trg_len, trg_len)
-    trg_mask = trg_pad_mask & trg_sub_mask # (batch_size, 1, trg_len, trg_len)
-
-    return trg_mask
-
-
-def make_masks(self, src, trg):
-
-        #src = [batch size, src sent len]
-        #trg = [batch size, trg sent len]
-
-        src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2)
-
-        trg_pad_mask = (trg != self.pad_idx).unsqueeze(1).unsqueeze(3)
-
-        #src_mask = [batch size, 1, 1, src sent len]
-        #trg_pad_mask = [batch size, 1, trg sent len, 1]
-
-        trg_len = trg.shape[1]
-
-        trg_sub_mask = torch.tril(torch.ones((trg_len, trg_len), device=self.device)).bool()
-
-        #trg_sub_mask = [trg sent len, trg sent len]
-
-        trg_mask = trg_pad_mask & trg_sub_mask
-
-        #trg_mask = [batch size, 1, trg sent len, trg sent len]
-
-        return src_mask, trg_mask
 
 class NoamOpt:
     "Optim wrapper that implements rate."

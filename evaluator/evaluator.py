@@ -15,7 +15,7 @@ class Evaluator(object):
                 src, src_len = batch.src
                 trg = batch.trg
                 input_trg = trg if model.name == RNN_NAME else trg[:, :-1]
-                output, _ = model(src, src_len, input_trg, teacher_ratio)
+                output = model(src, src_len, input_trg, teacher_ratio)
                 trg = trg.t() if model.name == RNN_NAME else trg[:, 1:]
                 output = output.contiguous().view(-1, output.shape[-1])
                 trg = trg.contiguous().view(-1)
