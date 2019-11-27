@@ -21,7 +21,7 @@ from evaluator.predictor import Predictor
 from utils.verbaldataset import VerbalDataset
 from utils.constants import (
     SEED, CUDA, CPU, PAD_TOKEN, RNN_NAME, CNN_NAME,
-    ATTENTION_1, ATTENTION_2, QUESTION, QUERY
+    TRANSFORMER_NAME, ATTENTION_1, ATTENTION_2, QUESTION, QUERY
 )
 
 ROOT_PATH = Path(os.path.dirname(__file__))
@@ -30,8 +30,8 @@ DEVICE = torch.device(CUDA if torch.cuda.is_available() else CPU)
 def parse_args():
     """Add arguments to parser"""
     parser = argparse.ArgumentParser(description='Verbalization dataset baseline models.')
-    parser.add_argument('--model', default=RNN_NAME, type=str,
-                        choices=[RNN_NAME, CNN_NAME], help='model to train the dataset')
+    parser.add_argument('--model', default=TRANSFORMER_NAME, type=str,
+                        choices=[RNN_NAME, CNN_NAME, TRANSFORMER_NAME], help='model to train the dataset')
     parser.add_argument('--input', default=QUESTION, type=str,
                         choices=[QUESTION, QUERY], help='use query as input')
     parser.add_argument('--attention', default=ATTENTION_1, type=str,
@@ -55,7 +55,7 @@ def main():
     print('--------------------------------')
     print(f'Model: {args.model}')
     print(f'Model input: {args.input}')
-    if args.model != CNN_NAME:
+    if args.model == RNN_NAME:
         print(f'Attention: {args.attention}')
     print(f'Cover entities: {args.cover_entities}')
     print('--------------------------------')

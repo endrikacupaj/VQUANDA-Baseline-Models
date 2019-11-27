@@ -5,6 +5,7 @@ QUERY = 'query'
 
 RNN_NAME = 'rnn'
 CNN_NAME = 'cnn'
+TRANSFORMER_NAME = 'trasnformer'
 
 ATTENTION_1 = 'bahdanau'
 ATTENTION_2 = 'luong'
