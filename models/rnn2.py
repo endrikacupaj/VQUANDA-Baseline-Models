@@ -67,12 +67,10 @@ class Encoder(nn.Module):
 
 class Attention(nn.Module):
     """Attention"""
-    def __init__(self, dim):
+    def __init__(self, input_embed, source_embed, output_embed):
         super().__init__()
-        # if encoder bidirectional source_embed=enc_hid*2, then linear_in(input_embed, source_embed)
-        #                                                       liner_out(input_embed+source_embed, output_embed)
-        self.linear_in = Linear(dim, dim*2)
-        self.linear_out = Linear(dim*3, dim)
+        self.linear_in = Linear(input_embed, source_embed)
+        self.linear_out = Linear(input_embed+source_embed, output_embed)
 
     def forward(self, output, context, mask):
         """
@@ -132,7 +130,7 @@ class Decoder(nn.Module):
             dropout=self.dropout if num_layers > 1 else 0.
         )
 
-        self.attention = Attention(self.hidden_size)
+        self.attention = Attention(self.hidden_size, self.hidden_size*2, self.hidden_size)
         self.out = Linear(self.hidden_size, self.output_dim)
 
     def _decoder_step(self, input_var, hidden, encoder_outputs, mask):

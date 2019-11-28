@@ -55,7 +55,7 @@ class Encoder(nn.Module):
 
     def forward(self, src_tokens, **kwargs):
         """
-        Run the forward pass for convolutional encoder
+        Forward pass for convolutional encoder
 
         Args:
             src_tokens (LongTensor): (batch, src_len)
@@ -204,7 +204,7 @@ class Decoder(nn.Module):
 
     def forward(self, trg_tokens, encoder_out, **kwargs):
         """
-        Run the forward pass for encoder
+        Forward pass for convolutional decoder
 
         Args:
             trg_tokens (LongTensor): (batch, trg_len)

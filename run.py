@@ -29,7 +29,7 @@ DEVICE = torch.device(CUDA if torch.cuda.is_available() else CPU)
 def parse_args():
     """Add arguments to parser"""
     parser = argparse.ArgumentParser(description='Verbalization dataset baseline models.')
-    parser.add_argument('--model', default=TRANSFORMER_NAME, type=str,
+    parser.add_argument('--model', default=RNN_NAME, type=str,
                         choices=[RNN_NAME, CNN_NAME, TRANSFORMER_NAME], help='model to train the dataset')
     parser.add_argument('--input', default=QUESTION, type=str,
                         choices=[QUESTION, QUERY], help='use query as input')
