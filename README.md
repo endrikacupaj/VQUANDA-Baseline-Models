@@ -17,8 +17,16 @@ The models we use are based on:
 - Transformer Seq2seq:
     - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 
-
 ## Experiments
+### Requirements and Setup
+Python version >= 3.7
+``` bash
+git clone https://github.com/endrikacupaj/Verbalization-Dataset-Baseline-Models.git
+cd Verbalization-Dataset-Baseline-Models
+pip install -r requirements.txt
+```
+
+### Run models
 RNN-1 with Bahdanau attention:
 ``` bash
 python run.py --model rnn --attention bahdanau
