@@ -118,8 +118,8 @@ class Attention(nn.Module):
     """Attention"""
     def __init__(self, conv_channels, embed_dim):
         super().__init__()
-        self.in_projection = Linear(conv_channels, embed_dim)
-        self.out_projection = Linear(embed_dim, conv_channels)
+        self.linear_in = Linear(conv_channels, embed_dim)
+        self.linear_out = Linear(embed_dim, conv_channels)
 
     def forward(self, conved, embedded, encoder_out, encoder_padding_mask):
         """
@@ -137,7 +137,7 @@ class Attention(nn.Module):
         """
         encoder_conved, encoder_combined = encoder_out
 
-        conved_emb = self.in_projection(conved.permute(0, 2, 1)) # (batch, trg_len, embed_dim)
+        conved_emb = self.linear_in(conved.permute(0, 2, 1)) # (batch, trg_len, embed_dim)
         combined = (conved_emb + embedded) * math.sqrt(0.5) # (batch, trg_len, embed_dim)
 
         energy = torch.matmul(combined, encoder_conved.permute(0, 2, 1)) # (batch, trg_len, src_len)
@@ -148,7 +148,7 @@ class Attention(nn.Module):
         attention = F.softmax(energy, dim=2)
 
         attended_encoding = torch.matmul(attention, encoder_combined) # (batch, trg_len, embed_dim)
-        attended_encoding = self.out_projection(attended_encoding) # (batch, trg_len, conv_channels)
+        attended_encoding = self.linear_out(attended_encoding) # (batch, trg_len, conv_channels)
 
         # apply residual connection
         attended_combined = (conved + attended_encoding.permute(0, 2, 1)) * math.sqrt(0.5)
@@ -200,7 +200,7 @@ class Decoder(nn.Module):
             layer_in_channels.append(out_channels)
 
         self.inchannels2embed = Linear(in_channels, embed_dim)
-        self.out = Linear(embed_dim, output_dim)
+        self.linear_out = Linear(embed_dim, output_dim)
 
     def forward(self, trg_tokens, encoder_out, **kwargs):
         """
@@ -264,7 +264,7 @@ class Decoder(nn.Module):
         conved = self.inchannels2embed(x.permute(0, 2, 1)) # (batch, trg_len, embed_dim)
         conved = F.dropout(conved, p=self.dropout, training=self.training)
 
-        outputs = self.out(conved)
+        outputs = self.linear_out(conved)
 
         return outputs # , avg_attn_scores
 

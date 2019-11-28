@@ -11,8 +11,9 @@ from torch.autograd import Variable
 from utils.constants import PAD_TOKEN
 
 class Encoder(nn.Module):
-    def __init__(self, vocabulary, device, embed_dim=512, layers=6, heads=8,
-                 pf_dim=2048, dropout=0.1, max_positions=100):
+    """Encoder"""
+    def __init__(self, vocabulary, device, embed_dim=512, layers=2,
+                 heads=8, pf_dim=2048, dropout=0.1, max_positions=100):
         super().__init__()
         input_dim = len(vocabulary)
         self.padding_idx = vocabulary.stoi[PAD_TOKEN]
@@ -47,6 +48,7 @@ class Encoder(nn.Module):
         return x
 
 class EncoderLayer(nn.Module):
+    """EncoderLayer"""
     def __init__(self, embed_dim, heads, pf_dim, dropout, device):
         super().__init__()
 
@@ -72,7 +74,8 @@ class EncoderLayer(nn.Module):
         return x
 
 class Decoder(nn.Module):
-    def __init__(self, vocabulary, device, embed_dim=512, layers=6,
+    """Decoder"""
+    def __init__(self, vocabulary, device, embed_dim=512, layers=2,
                  heads=8, pf_dim=2048, dropout=0.1, max_positions=100):
         super().__init__()
 
@@ -89,7 +92,7 @@ class Decoder(nn.Module):
 
         self.layers = nn.ModuleList([DecoderLayer(embed_dim, heads, pf_dim, dropout, device) for _ in range(layers)])
 
-        self.out = nn.Linear(embed_dim, output_dim)
+        self.linear_out = nn.Linear(embed_dim, output_dim)
 
     def make_masks(self, src_tokens, trg_tokens):
         src_mask = (src_tokens != self.pad_id).unsqueeze(1).unsqueeze(2)
@@ -121,9 +124,10 @@ class Decoder(nn.Module):
         for layer in self.layers:
             x = layer(x, encoder_out, trg_mask, src_mask)
 
-        return self.out(x)
+        return self.linear_out(x)
 
 class DecoderLayer(nn.Module):
+    """DecoderLayer"""
     def __init__(self, embed_dim, heads, pf_dim, dropout, device):
         super().__init__()
         self.layer_norm = nn.LayerNorm(embed_dim)
@@ -152,6 +156,7 @@ class DecoderLayer(nn.Module):
         return x
 
 class MultiHeadedAttention(nn.Module):
+    """MultiHeadedAttention"""
     def __init__(self, embed_dim, heads, dropout, device):
         super().__init__()
         assert embed_dim % heads == 0
@@ -159,13 +164,13 @@ class MultiHeadedAttention(nn.Module):
         self.heads = heads
         self.dropout = dropout
 
-        self.w_q = nn.Linear(embed_dim, embed_dim)
-        self.w_k = nn.Linear(embed_dim, embed_dim)
-        self.w_v = nn.Linear(embed_dim, embed_dim)
+        self.linear_q = nn.Linear(embed_dim, embed_dim)
+        self.linear_k = nn.Linear(embed_dim, embed_dim)
+        self.linear_v = nn.Linear(embed_dim, embed_dim)
 
         self.scale = torch.sqrt(torch.FloatTensor([self.attn_dim])).to(device)
 
-        self.fc = nn.Linear(embed_dim, embed_dim)
+        self.linear_out = nn.Linear(embed_dim, embed_dim)
 
     def forward(self, query, key, value, mask=None):
         """
@@ -182,9 +187,9 @@ class MultiHeadedAttention(nn.Module):
         """
         batch_size = query.shape[0]
 
-        Q = self.w_q(query)
-        K = self.w_k(key)
-        V = self.w_v(value)
+        Q = self.linear_q(query)
+        K = self.linear_k(key)
+        V = self.linear_v(value)
 
         Q = Q.view(batch_size, -1, self.heads, self.attn_dim).permute(0, 2, 1, 3) # (batch, heads, sent_len, attn_dim)
         K = K.view(batch_size, -1, self.heads, self.attn_dim).permute(0, 2, 1, 3) # (batch, heads, sent_len, attn_dim)
@@ -201,15 +206,16 @@ class MultiHeadedAttention(nn.Module):
         x = torch.matmul(attention, V) # (batch, heads, sent_len, attn_dim)
         x = x.permute(0, 2, 1, 3).contiguous() # (batch, sent_len, heads, attn_dim)
         x = x.view(batch_size, -1, self.heads * (self.attn_dim)) # (batch, sent_len, embed_dim)
-        x = self.fc(x)
+        x = self.linear_out(x)
 
         return x
 
 class PositionwiseFeedforward(nn.Module):
+    """PositionwiseFeedforward"""
     def __init__(self, embed_dim, pf_dim, dropout):
         super().__init__()
-        self.fc_1 = nn.Linear(embed_dim, pf_dim)
-        self.fc_2 = nn.Linear(pf_dim, embed_dim)
+        self.linear_1 = nn.Linear(embed_dim, pf_dim)
+        self.linear_2 = nn.Linear(pf_dim, embed_dim)
         self.dropout = dropout
 
     def forward(self, x):
@@ -222,10 +228,10 @@ class PositionwiseFeedforward(nn.Module):
         Returns:
             x (LongTensor): (batch, src_len, embed_dim)
         """
-        x = torch.relu(self.fc_1(x))
+        x = torch.relu(self.linear_1(x))
         x = F.dropout(x, p=self.dropout, training=self.training)
 
-        return self.fc_2(x)
+        return self.linear_2(x)
 
 class PositionalEmbedding(nn.Module):
     "Implement the PE function."

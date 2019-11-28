@@ -36,6 +36,14 @@ class Encoder(nn.Module):
     def forward(self, src_tokens, **kwargs):
         """
         Forward Encoder
+
+        Args:
+            src_tokens (LongTensor): (batch, src_len)
+            src_lengths (LongTensor): (batch)
+
+        Returns:
+            x (LongTensor): (src_len, batch, hidden_size * num_directions)
+            hidden (LongTensor): (batch, enc_hid_dim)
         """
         src_lengths = kwargs.get('src_lengths', '')
 
@@ -88,7 +96,7 @@ class Attention(nn.Module):
         attn_scores = (source_hids * x.unsqueeze(0)).sum(dim=2)
 
         # don't attend over padding
-        attn_scores = attn_scores.float().masked_fill_(mask == 0, float('-inf'))
+        attn_scores = attn_scores.float().masked_fill(mask == 0, float('-inf'))
 
         attn_scores = F.softmax(attn_scores, dim=0)  # srclen x bsz
 
@@ -131,7 +139,7 @@ class Decoder(nn.Module):
         )
 
         self.attention = Attention(self.hidden_size, self.hidden_size*2, self.hidden_size)
-        self.out = Linear(self.hidden_size, self.output_dim)
+        self.linear_out = Linear(self.hidden_size, self.output_dim)
 
     def _decoder_step(self, input_var, hidden, encoder_outputs, mask):
         input_var = input_var.unsqueeze(1)
@@ -145,7 +153,7 @@ class Decoder(nn.Module):
         output, attn = self.attention(output, encoder_outputs, mask)
         output = F.dropout(output, p=self.dropout, training=self.training)
 
-        output = self.out(output)
+        output = self.linear_out(output)
         # output = F.dropout(output, p=self.dropout, training=self.training)
         output = F.log_softmax(output, dim=1)
 

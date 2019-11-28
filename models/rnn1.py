@@ -30,14 +30,14 @@ class Encoder(nn.Module):
             dropout=dropout if num_layers > 1 else 0.,
             bidirectional=bidirectional
         )
-        self.fc_out = nn.Linear(hidden_size * 2, hidden_size)
+        self.linear_out = nn.Linear(hidden_size * 2, hidden_size)
 
     def forward(self, src_tokens, **kwargs):
         """
         Forward Encoder
 
         Args:
-            src_tokens (LongTensor): (src_len, batch)
+            src_tokens (LongTensor): (batch, src_len)
             src_lengths (LongTensor): (batch)
 
         Returns:
@@ -63,7 +63,7 @@ class Encoder(nn.Module):
         last_backward = hidden[-1, :, :]
         hidden = torch.cat((last_forward, last_backward), dim=1)
 
-        hidden = torch.tanh(self.fc_out(hidden)) # (batch, enc_hid_dim)
+        hidden = torch.tanh(self.linear_out(hidden)) # (batch, enc_hid_dim)
 
         return x, hidden
 
@@ -73,7 +73,7 @@ class Attention(nn.Module):
     def __init__(self, enc_hid_dim, dec_hid_dim):
         super().__init__()
 
-        self.attn = nn.Linear((enc_hid_dim * 2) + dec_hid_dim, dec_hid_dim)
+        self.linear = nn.Linear((enc_hid_dim * 2) + dec_hid_dim, dec_hid_dim)
         self.v = nn.Parameter(torch.rand(dec_hid_dim))
 
     def forward(self, hidden, encoder_outputs, mask):
@@ -96,14 +96,14 @@ class Attention(nn.Module):
 
         encoder_outputs = encoder_outputs.permute(1, 0, 2) # (batch, src_len, enc_hid_dim * 2)
 
-        energy = torch.tanh(self.attn(torch.cat((hidden, encoder_outputs), dim=2))) # (batch, src_len, dec_hid_dim)
+        energy = torch.tanh(self.linear(torch.cat((hidden, encoder_outputs), dim=2))) # (batch, src_len, dec_hid_dim)
         energy = energy.permute(0, 2, 1) # (batch, dec_hid_dim, src_len)
 
         v = self.v.repeat(batch, 1).unsqueeze(1) # (batch, 1, dec_hid_dim)
 
         attention = torch.bmm(v, energy).squeeze(1)
 
-        attention = attention.masked_fill_(mask == 0, float('-inf'))
+        attention = attention.masked_fill(mask == 0, float('-inf'))
 
         return F.softmax(attention, dim=1)
 
@@ -133,7 +133,7 @@ class Decoder(nn.Module):
             hidden_size=hidden_size,
         )
 
-        self.out = Linear(
+        self.linear_out = Linear(
             in_features=(hidden_size * 2) + hidden_size + embed_dim,
             out_features=self.output_dim
         )
@@ -166,7 +166,7 @@ class Decoder(nn.Module):
         weighted = weighted.squeeze(0)
 
         x = torch.cat((output, weighted, x), dim=1)
-        output = self.out(x) # (batch, output_dim)
+        output = self.linear_out(x) # (batch, output_dim)
 
         return output, hidden.squeeze(0), attn.squeeze(1)
 
