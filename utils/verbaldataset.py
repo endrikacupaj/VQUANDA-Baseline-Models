@@ -1,6 +1,8 @@
 """VerbalDataset"""
+import os
 import re
 import json
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 from torchtext.data import Field, Example, Dataset
 
@@ -24,15 +26,16 @@ class VerbalDataset(object):
         '.': 'sep_dot',
         'COUNT(uri)': 'count_uri'
     }
-    def __init__(self, root_path):
-        self.train_path = str(root_path) + TRAIN_PATH
-        self.test_path = str(root_path) + TEST_PATH
+    ROOT_PATH = Path(os.path.dirname(__file__))
+    def __init__(self):
+        self.train_path = str(self.ROOT_PATH.parent.parent) + TRAIN_PATH
+        self.test_path = str(self.ROOT_PATH.parent.parent) + TEST_PATH
         self.train_data = None
         self.valid_data = None
         self.test_data = None
         self.src_field = None
         self.trg_field = None
-        self.earl_entities = self._read_earl_entites(str(root_path) + '/utils/earl_entities.json')
+        self.earl_entities = self._read_earl_entites(str(self.ROOT_PATH) + '/earl_entities.json')
 
     def _read_earl_entites(self, path):
         entities = []

@@ -22,7 +22,6 @@ from utils.constants import (
     TRANSFORMER_NAME, ATTENTION_1, ATTENTION_2, QUESTION, QUERY
 )
 
-ROOT_PATH = Path(os.path.dirname(__file__))
 DEVICE = torch.device(CUDA if torch.cuda.is_available() else CPU)
 
 def parse_args():
@@ -44,7 +43,7 @@ def parse_args():
 def main():
     """Main method to run the models"""
     args = parse_args()
-    dataset = VerbalDataset(ROOT_PATH)
+    dataset = VerbalDataset()
     query_as_input = True if args.input == QUERY else False
     dataset.load_data_and_fields(cover_entities=args.cover_entities, query_as_input=query_as_input)
     src_vocab, trg_vocab = dataset.get_vocabs()
