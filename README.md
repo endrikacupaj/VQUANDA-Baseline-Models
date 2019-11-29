@@ -21,6 +21,10 @@ The models we use are based on:
 ### Requirements and Setup
 Python version >= 3.7
 ``` bash
+# first download the dataset
+git clone https://github.com/endrikacupaj/QA-Verbalization-Dataset.git
+cd QA-Verbalization-Dataset
+# inside the dataset download the baseline models
 git clone https://github.com/endrikacupaj/Verbalization-Dataset-Baseline-Models.git
 cd Verbalization-Dataset-Baseline-Models
 pip install -r requirements.txt
