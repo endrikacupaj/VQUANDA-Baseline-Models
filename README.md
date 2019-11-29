@@ -76,7 +76,7 @@ python run.py --model transformer --input query --cover_entities
 
 
 ## License
-The repository is under [MIT lisence](LICENSE).
+The repository is under [MIT License](LICENSE).
 
 ## References
 
