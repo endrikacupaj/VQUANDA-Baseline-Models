@@ -109,22 +109,28 @@ def main():
     model = Chechpoint.load(model)
 
     # generate test iterator
-    test_iterator = BucketIterator(test_data,
-                                   batch_size=args.batch_size,
-                                   sort_within_batch=True if args.model == RNN_NAME else False,
-                                   sort_key=lambda x: len(x.src),
-                                   device=DEVICE)
+    valid_iterator, test_iterator = BucketIterator.splits(
+                                        (valid_data, test_data),
+                                        batch_size=args.batch_size,
+                                        sort_within_batch=True if args.model == RNN_NAME else False,
+                                        sort_key=lambda x: len(x.src),
+                                        device=DEVICE)
 
     # evaluate model
+    valid_loss = trainer.evaluator.evaluate(model, valid_iterator)
     test_loss = trainer.evaluator.evaluate(model, test_iterator)
 
-    # calculate blue score for test data
-    scorer = BleuScorer()
+    # calculate blue score for valid and test data
     predictor = Predictor(model, src_vocab, trg_vocab, DEVICE)
-    scorer.data_score(test_data.examples, predictor)
+    valid_scorer = BleuScorer()
+    test_scorer = BleuScorer()
+    valid_scorer.data_score(valid_data.examples, predictor)
+    test_scorer.data_score(test_data.examples, predictor)
 
+    print(f'| Val. Loss: {valid_loss:.3f} | Test PPL: {math.exp(valid_loss):7.3f} |')
+    print(f'| Val. Data Average BLEU score {valid_scorer.average_score()} |')
     print(f'| Test Loss: {test_loss:.3f} | Test PPL: {math.exp(test_loss):7.3f} |')
-    print(f'| Average BLEU score {scorer.average_score()} |')
+    print(f'| Test Data Average BLEU score {test_scorer.average_score()} |')
 
 
 if __name__ == "__main__":

@@ -23,7 +23,10 @@ class Predictor(object):
 
         outputs = [self.trg_vocab.stoi[SOS_TOKEN]]
 
-        for _ in range(self.model.decoder.max_positions):
+        # cnn positional embedding gives assertion error for tensor
+        # of size > max_positions-1, we predict tokens for max_positions-2
+        # to avoid the error
+        for _ in range(self.model.decoder.max_positions-2):
             trg_tensor = torch.LongTensor(outputs).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
