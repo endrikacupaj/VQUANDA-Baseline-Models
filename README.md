@@ -1,11 +1,11 @@
-# Baseline models for Verbalization Dataset
+# Baseline models for VQuAnDa
 
-## Dataset Repository
+## VQuAnDa Repository
 
-- https://github.com/endrikacupaj/QA-Verbalization-Dataset
+- https://github.com/AskNowQA/VQUANDA
 
 ## Introduction
-The repository contains sequence to sequence models for evaluating Verbalization dataset.
+The repository contains sequence to sequence models for evaluating VQuAnDa.
 
 The models we use are based on:
 
@@ -22,11 +22,11 @@ The models we use are based on:
 Python version >= 3.7
 ``` bash
 # first download the dataset
-git clone https://github.com/endrikacupaj/QA-Verbalization-Dataset.git
-cd QA-Verbalization-Dataset
+git clone https://github.com/AskNowQA/VQUANDA.git
+cd VQUANDA
 # inside the dataset download the baseline models
-git clone https://github.com/endrikacupaj/Verbalization-Dataset-Baseline-Models.git
-cd Verbalization-Dataset-Baseline-Models
+git clone https://github.com/endrikacupaj/VQUANDA-Baseline-Models.git
+cd VQUANDA-Baseline-Models
 pip install -r requirements.txt
 ```
 
