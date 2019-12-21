@@ -96,7 +96,7 @@ class Decoder(nn.Module):
 
     def make_masks(self, src_tokens, trg_tokens):
         src_mask = (src_tokens != self.pad_id).unsqueeze(1).unsqueeze(2)
-        trg_pad_mask = (trg_tokens != self.pad_id).unsqueeze(1).unsqueeze(3)
+        trg_pad_mask = (trg_tokens != self.pad_id).unsqueeze(1).unsqueeze(3).byte()
         trg_len = trg_tokens.shape[1]
         trg_sub_mask = torch.tril(torch.ones((trg_len, trg_len), device=self.device)).byte()
         trg_mask = trg_pad_mask & trg_sub_mask
