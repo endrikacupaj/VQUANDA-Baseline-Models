@@ -34,10 +34,10 @@ class Predictor(object):
 
             prediction = output.argmax(2)[:, -1].item()
 
-            outputs.append(prediction)
-
             if prediction == self.trg_vocab.stoi[EOS_TOKEN]:
                 break
+
+            outputs.append(prediction)
 
         translation = [self.trg_vocab.itos[i] for i in outputs]
 
