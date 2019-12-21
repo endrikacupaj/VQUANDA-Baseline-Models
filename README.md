@@ -20,6 +20,8 @@ The models we use are based on:
 ## Experiments
 ### Requirements and Setup
 Python version >= 3.7
+
+PyTorch version >= 1.3.0
 ``` bash
 # first download the dataset
 git clone https://github.com/AskNowQA/VQUANDA.git
